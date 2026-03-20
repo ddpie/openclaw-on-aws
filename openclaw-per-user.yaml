@@ -102,7 +102,7 @@ Conditions:
     - !Not [!Equals [!Ref AllowedSSHCIDR, ""]]
     - !Not [!Equals [!Ref KeyPairName, "none"]]
     - !Not [!Equals [!Ref KeyPairName, ""]]
-  EnableDocker: !Equals [!Ref EnableSandbox, "true"]
+
   ProtectData: !Equals [!Ref EnableDataProtection, "true"]
   DeleteData: !Not [!Equals [!Ref EnableDataProtection, "true"]]
 
@@ -149,8 +149,8 @@ Resources:
               Service: ec2.amazonaws.com
             Action: 'sts:AssumeRole'
       ManagedPolicyArns:
-        - 'arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore'
-        - 'arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy'
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/AmazonSSMManagedInstanceCore'
+        - !Sub 'arn:${AWS::Partition}:iam::aws:policy/CloudWatchAgentServerPolicy'
       Policies:
         - PolicyName: BedrockAccessPolicy
           PolicyDocument:
@@ -160,6 +160,11 @@ Resources:
                 Action:
                   - 'bedrock:InvokeModel'
                   - 'bedrock:InvokeModelWithResponseStream'
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:bedrock:*::foundation-model/*'
+                  - !Sub 'arn:${AWS::Partition}:bedrock:*:${AWS::AccountId}:inference-profile/*'
+              - Effect: Allow
+                Action:
                   - 'bedrock:ListFoundationModels'
                   - 'bedrock:GetFoundationModel'
                 Resource: '*'
@@ -611,7 +616,7 @@ Outputs:
 
   Step4StartChatting:
     Description: "STEP 4: Start using OpenClaw!"
-    Value: "Connect WhatsApp, Telegram, Discord. See README: https://github.com/aws-samples/sample-OpenClaw-on-AWS-with-Bedrock"
+    Value: "Connect WhatsApp, Telegram, Discord. See README: https://github.com/ddpie/openclaw-on-aws"
 
   InstanceId:
     Description: "EC2 Instance ID (for reference)"

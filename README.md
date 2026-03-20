@@ -1,9 +1,12 @@
 # OpenClaw on AWS
 
-> 在 AWS 上部署 OpenClaw，使用 Amazon Bedrock。无需 API Key，IAM 认证。
+> 在 AWS 上部署 [OpenClaw](https://github.com/openclaw/openclaw)，使用 Amazon Bedrock。无需 API Key，IAM 认证。
+
+[OpenClaw](https://docs.openclaw.ai) 是一个开源 AI 助手平台，支持连接多种大语言模型，并通过 WhatsApp、Telegram、Discord、飞书等渠道与用户交互。本仓库提供 CloudFormation 模板，帮助你在 AWS 上快速部署 OpenClaw。
 
 [中文](#中文) | [English](#english)
 
+[![OpenClaw](https://img.shields.io/badge/OpenClaw-AI_Assistant-purple.svg)](https://github.com/openclaw/openclaw)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![AWS](https://img.shields.io/badge/AWS-Bedrock-orange.svg)](https://aws.amazon.com/bedrock/)
 [![CloudFormation](https://img.shields.io/badge/IaC-CloudFormation-blue.svg)](https://aws.amazon.com/cloudformation/)
@@ -23,7 +26,7 @@
 
 ## 前置条件
 
-1. 在 [Bedrock 控制台](https://console.aws.amazon.com/bedrock/) **开启模型访问**（推荐 Claude Opus 4.6）
+1. 在 [Bedrock 控制台 - Model Access](https://console.aws.amazon.com/bedrock/home#/modelaccess) **开启模型访问**（默认使用 Amazon Nova 2 Lite，追求最佳效果可选 Claude Opus 4.6）
 2. 在目标 Region **创建 EC2 密钥对**（可选，用于 SSH 访问）
 
 ## 方案一：独立部署（单人）
@@ -59,23 +62,30 @@ aws cloudformation create-stack \
 
 ### 部署后操作
 
+> 💡 **前置条件**：需安装 [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) 和 [Session Manager Plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html)
+
 ```bash
-# 获取实例 ID
+# 1. 获取实例 ID
 INSTANCE_ID=$(aws cloudformation describe-stacks \
   --stack-name openclaw-bedrock \
   --query 'Stacks[0].Outputs[?OutputKey==`InstanceId`].OutputValue' \
   --output text)
 
-# SSM 登录
+# 2. 端口转发（在本地终端运行，保持窗口打开）
+aws ssm start-session --target $INSTANCE_ID \
+  --document-name AWS-StartPortForwardingSession \
+  --parameters '{"portNumber":["18789"],"localPortNumber":["18789"]}'
+
+# 3. 获取 access token（新开一个终端）
+aws ssm start-session --target $INSTANCE_ID \
+  --document-name AWS-StartInteractiveCommand \
+  --parameters command='["sudo -u ubuntu cat /home/ubuntu/.openclaw/openclaw.json | grep token"]'
+
+# 4. 打开浏览器访问 http://localhost:18789，输入 token 登录
+
+# 或者直接 SSM 登录实例进行初始化
 aws ssm start-session --target $INSTANCE_ID
-
-# 切换到 ubuntu 用户
 sudo su - ubuntu
-
-# 验证状态
-openclaw gateway status
-
-# 初始化
 openclaw onboard
 ```
 
@@ -151,10 +161,21 @@ INSTANCE_ID=$(aws cloudformation describe-stacks \
   --stack-name openclaw-alice \
   --query 'Stacks[0].Outputs[?OutputKey==`InstanceId`].OutputValue' --output text)
 
-# 登录并初始化
+# 端口转发（本地终端运行，保持窗口打开）
+aws ssm start-session --target $INSTANCE_ID \
+  --document-name AWS-StartPortForwardingSession \
+  --parameters '{"portNumber":["18789"],"localPortNumber":["18789"]}'
+
+# 获取 access token（新开终端）
+aws ssm start-session --target $INSTANCE_ID \
+  --document-name AWS-StartInteractiveCommand \
+  --parameters command='["sudo -u ubuntu cat /home/ubuntu/.openclaw/openclaw.json | grep token"]'
+
+# 打开 http://localhost:18789 输入 token 登录
+
+# 或直接 SSM 登录初始化
 aws ssm start-session --target $INSTANCE_ID
 sudo su - ubuntu
-openclaw gateway status
 openclaw onboard
 ```
 
@@ -204,7 +225,9 @@ openclaw onboard
 
 # OpenClaw on AWS (English)
 
-> Deploy OpenClaw on AWS with Amazon Bedrock. No API keys. IAM authentication.
+> Deploy [OpenClaw](https://github.com/openclaw/openclaw) on AWS with Amazon Bedrock. No API keys. IAM authentication.
+
+[OpenClaw](https://docs.openclaw.ai) is an open-source AI assistant platform that connects to multiple LLMs and interacts with users via WhatsApp, Telegram, Discord, Lark, and more. This repo provides CloudFormation templates for quick deployment on AWS.
 
 ## Deployment Options
 
@@ -217,7 +240,7 @@ openclaw onboard
 
 ## Prerequisites
 
-1. **Enable Bedrock models** in the [Bedrock Console](https://console.aws.amazon.com/bedrock/) (recommended: Claude Opus 4.6)
+1. **Enable Bedrock models** in the [Bedrock Console - Model Access](https://console.aws.amazon.com/bedrock/home#/modelaccess) (defaults to Amazon Nova 2 Lite; choose Claude Opus 4.6 for best quality)
 2. **Create an EC2 key pair** in your target region (optional, for SSH access)
 
 ## Option 1: Standalone (Single User)
@@ -253,23 +276,30 @@ aws cloudformation create-stack \
 
 ### After Deployment
 
+> 💡 **Prerequisites**: Install [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) and [Session Manager Plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html)
+
 ```bash
-# Get instance ID
+# 1. Get instance ID
 INSTANCE_ID=$(aws cloudformation describe-stacks \
   --stack-name openclaw-bedrock \
   --query 'Stacks[0].Outputs[?OutputKey==`InstanceId`].OutputValue' \
   --output text)
 
-# Connect via SSM
+# 2. Port forwarding (keep this terminal open)
+aws ssm start-session --target $INSTANCE_ID \
+  --document-name AWS-StartPortForwardingSession \
+  --parameters '{"portNumber":["18789"],"localPortNumber":["18789"]}'
+
+# 3. Get access token (open a new terminal)
+aws ssm start-session --target $INSTANCE_ID \
+  --document-name AWS-StartInteractiveCommand \
+  --parameters command='["sudo -u ubuntu cat /home/ubuntu/.openclaw/openclaw.json | grep token"]'
+
+# 4. Open http://localhost:18789 in your browser and enter the token
+
+# Or SSH into the instance directly for setup
 aws ssm start-session --target $INSTANCE_ID
-
-# Switch to ubuntu user
 sudo su - ubuntu
-
-# Verify
-openclaw gateway status
-
-# Initialize
 openclaw onboard
 ```
 
@@ -345,10 +375,21 @@ INSTANCE_ID=$(aws cloudformation describe-stacks \
   --stack-name openclaw-alice \
   --query 'Stacks[0].Outputs[?OutputKey==`InstanceId`].OutputValue' --output text)
 
-# Connect and initialize
+# Port forwarding (keep this terminal open)
+aws ssm start-session --target $INSTANCE_ID \
+  --document-name AWS-StartPortForwardingSession \
+  --parameters '{"portNumber":["18789"],"localPortNumber":["18789"]}'
+
+# Get access token (open a new terminal)
+aws ssm start-session --target $INSTANCE_ID \
+  --document-name AWS-StartInteractiveCommand \
+  --parameters command='["sudo -u ubuntu cat /home/ubuntu/.openclaw/openclaw.json | grep token"]'
+
+# Open http://localhost:18789 and enter the token
+
+# Or connect directly for setup
 aws ssm start-session --target $INSTANCE_ID
 sudo su - ubuntu
-openclaw gateway status
 openclaw onboard
 ```
 
