@@ -95,10 +95,13 @@ Parameters:
       - "false"
 
 Conditions:
-  HasKeyPair: !Not [!Equals [!Ref KeyPairName, "none"]]
+  HasKeyPair: !And
+    - !Not [!Equals [!Ref KeyPairName, "none"]]
+    - !Not [!Equals [!Ref KeyPairName, ""]]
   AllowSSH: !And
     - !Not [!Equals [!Ref AllowedSSHCIDR, ""]]
     - !Not [!Equals [!Ref KeyPairName, "none"]]
+    - !Not [!Equals [!Ref KeyPairName, ""]]
   EnableDocker: !Equals [!Ref EnableSandbox, "true"]
   ProtectData: !Equals [!Ref EnableDataProtection, "true"]
   DeleteData: !Not [!Equals [!Ref EnableDataProtection, "true"]]
