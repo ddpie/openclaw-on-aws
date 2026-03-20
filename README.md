@@ -19,7 +19,6 @@
 | **Use case** | Single user | Teams (10–100+ users) |
 | **Template** | `openclaw-standalone.yaml` | `vpc-shared.yaml` + `openclaw-per-user.yaml` |
 | **VPC** | One per stack | Shared across all users |
-| **Cost (50 users)** | ~$2,400/mo | ~$650/mo |
 | **Isolation** | Full network isolation | IAM + EBS isolation, shared network |
 
 ## Prerequisites
@@ -148,16 +147,6 @@ done
 └─────────────────────────────────────────────────┘
 ```
 
-## Cost Estimate
-
-| Component | Standalone | Shared VPC (50 users) |
-|-----------|-----------|----------------------|
-| EC2 (t4g.medium) | $13/mo | $650/mo ($13 × 50) |
-| VPC Endpoints | $35/mo | $35/mo (shared) |
-| EBS (30GB) | $3/mo | $150/mo ($3 × 50) |
-| Bedrock | Pay per use | Pay per use |
-| **Total** | **~$51/mo** | **~$835/mo (~$17/user)** |
-
 ## License
 
 MIT
@@ -177,7 +166,6 @@ MIT
 | **适用场景** | 单人使用 | 团队（10–100+ 人） |
 | **模板** | `openclaw-standalone.yaml` | `vpc-shared.yaml` + `openclaw-per-user.yaml` |
 | **VPC** | 每人独立 | 全员共享 |
-| **50 人月成本** | ~$2,400 | ~$650 |
 | **隔离性** | 完全网络隔离 | IAM + 数据卷隔离，网络共享 |
 
 ## 前置条件
@@ -305,16 +293,6 @@ done
 │              └─────────────────┘                 │
 └─────────────────────────────────────────────────┘
 ```
-
-## 成本估算
-
-| 组件 | 独立部署 | 共享 VPC（50 人） |
-|------|---------|-----------------|
-| EC2 (t4g.medium) | $13/月 | $650/月（$13 × 50） |
-| VPC Endpoints | $35/月 | $35/月（共享） |
-| EBS (30GB) | $3/月 | $150/月（$3 × 50） |
-| Bedrock | 按量付费 | 按量付费 |
-| **合计** | **~$51/月** | **~$835/月（约 $17/人）** |
 
 ## 许可证
 
