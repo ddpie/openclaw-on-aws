@@ -1,6 +1,6 @@
 # OpenClaw on AWS
 
-> Deploy OpenClaw on AWS with Amazon Bedrock. No API keys. IAM authentication. ~$13/month per user.
+> Deploy OpenClaw on AWS with Amazon Bedrock. No API keys. IAM authentication.
 
 [English](#english) | [中文](#中文)
 
@@ -24,20 +24,38 @@
 ## Prerequisites
 
 1. **Enable Bedrock models** in the [Bedrock Console](https://console.aws.amazon.com/bedrock/) (recommended: Claude Opus 4.6)
-2. **Create an EC2 key pair** in your target region
+2. **Create an EC2 key pair** in your target region (optional, for SSH access)
 
 ## Option 1: Standalone (Single User)
 
 One stack = one OpenClaw instance with its own VPC. Best for individual use or quick evaluation.
 
-### Launch Stack
+### Deploy via Console
 
-| Region | Launch |
-|--------|--------|
-| **US West (Oregon)** | [![Launch](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-west-2#/stacks/create/review?stackName=openclaw-bedrock&templateURL=https://raw.githubusercontent.com/ddpie/openclaw-on-aws/main/openclaw-standalone.yaml) |
-| **US East (Virginia)** | [![Launch](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/create/review?stackName=openclaw-bedrock&templateURL=https://raw.githubusercontent.com/ddpie/openclaw-on-aws/main/openclaw-standalone.yaml) |
-| **EU (Ireland)** | [![Launch](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=eu-west-1#/stacks/create/review?stackName=openclaw-bedrock&templateURL=https://raw.githubusercontent.com/ddpie/openclaw-on-aws/main/openclaw-standalone.yaml) |
-| **Asia Pacific (Tokyo)** | [![Launch](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=ap-northeast-1#/stacks/create/review?stackName=openclaw-bedrock&templateURL=https://raw.githubusercontent.com/ddpie/openclaw-on-aws/main/openclaw-standalone.yaml) |
+1. Open CloudFormation in your preferred region:
+   - [US West (Oregon)](https://console.aws.amazon.com/cloudformation/home?region=us-west-2#/stacks/create)
+   - [US East (Virginia)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/create)
+   - [EU (Ireland)](https://console.aws.amazon.com/cloudformation/home?region=eu-west-1#/stacks/create)
+   - [Asia Pacific (Tokyo)](https://console.aws.amazon.com/cloudformation/home?region=ap-northeast-1#/stacks/create)
+2. Choose **Upload a template file**, select `openclaw-standalone.yaml`
+3. Stack name: `openclaw-bedrock`
+4. Configure parameters (model, instance type, etc.)
+5. Check **"I acknowledge that AWS CloudFormation might create IAM resources"**
+6. Click **Create stack** and wait ~8 minutes for `CREATE_COMPLETE`
+
+### Deploy via CLI
+
+```bash
+git clone https://github.com/ddpie/openclaw-on-aws.git
+cd openclaw-on-aws
+
+aws cloudformation create-stack \
+  --stack-name openclaw-bedrock \
+  --template-body file://openclaw-standalone.yaml \
+  --parameters \
+    ParameterKey=InstanceType,ParameterValue=t4g.medium \
+  --capabilities CAPABILITY_IAM
+```
 
 ### After Deployment
 
@@ -67,33 +85,51 @@ One shared network + N per-user instances. Each user gets an independent EC2, IA
 
 ### Step 1 — Deploy Shared VPC (once)
 
-| Region | Launch |
-|--------|--------|
-| **US West (Oregon)** | [![Launch](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-west-2#/stacks/create/review?stackName=openclaw-shared-vpc&templateURL=https://raw.githubusercontent.com/ddpie/openclaw-on-aws/main/vpc-shared.yaml) |
-| **US East (Virginia)** | [![Launch](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/create/review?stackName=openclaw-shared-vpc&templateURL=https://raw.githubusercontent.com/ddpie/openclaw-on-aws/main/vpc-shared.yaml) |
-| **EU (Ireland)** | [![Launch](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=eu-west-1#/stacks/create/review?stackName=openclaw-shared-vpc&templateURL=https://raw.githubusercontent.com/ddpie/openclaw-on-aws/main/vpc-shared.yaml) |
-| **Asia Pacific (Tokyo)** | [![Launch](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=ap-northeast-1#/stacks/create/review?stackName=openclaw-shared-vpc&templateURL=https://raw.githubusercontent.com/ddpie/openclaw-on-aws/main/vpc-shared.yaml) |
-
-Note the Outputs: `VpcId`, `PublicSubnet1Id`, `PublicSubnet1AZ`.
+1. Open CloudFormation in your preferred region:
+   - [US West (Oregon)](https://console.aws.amazon.com/cloudformation/home?region=us-west-2#/stacks/create)
+   - [US East (Virginia)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/create)
+   - [EU (Ireland)](https://console.aws.amazon.com/cloudformation/home?region=eu-west-1#/stacks/create)
+   - [Asia Pacific (Tokyo)](https://console.aws.amazon.com/cloudformation/home?region=ap-northeast-1#/stacks/create)
+2. Upload `vpc-shared.yaml`, stack name: `openclaw-shared-vpc`
+3. Wait for `CREATE_COMPLETE` (~2 minutes)
+4. Go to **Outputs** tab, note: `VpcId`, `PublicSubnet1Id`, `PublicSubnet1AZ`
 
 ### Step 2 — Deploy Per-User Instances
 
-| Region | Launch |
-|--------|--------|
-| **US West (Oregon)** | [![Launch](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-west-2#/stacks/create/review?stackName=openclaw-user&templateURL=https://raw.githubusercontent.com/ddpie/openclaw-on-aws/main/openclaw-per-user.yaml) |
-| **US East (Virginia)** | [![Launch](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/create/review?stackName=openclaw-user&templateURL=https://raw.githubusercontent.com/ddpie/openclaw-on-aws/main/openclaw-per-user.yaml) |
-| **EU (Ireland)** | [![Launch](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=eu-west-1#/stacks/create/review?stackName=openclaw-user&templateURL=https://raw.githubusercontent.com/ddpie/openclaw-on-aws/main/openclaw-per-user.yaml) |
-| **Asia Pacific (Tokyo)** | [![Launch](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=ap-northeast-1#/stacks/create/review?stackName=openclaw-user&templateURL=https://raw.githubusercontent.com/ddpie/openclaw-on-aws/main/openclaw-per-user.yaml) |
-
-Fill in `VpcId`, `SubnetId`, and `AvailabilityZone` from the shared VPC stack outputs.
+1. Create a new stack, upload `openclaw-per-user.yaml`
+2. Stack name: `openclaw-<username>` (e.g. `openclaw-alice`)
+3. Fill in parameters:
+   - `VpcId` — from Step 1 Outputs
+   - `SubnetId` — from Step 1 Outputs (`PublicSubnet1Id`)
+   - `AvailabilityZone` — from Step 1 Outputs (`PublicSubnet1AZ`)
+   - `InstanceType` — `t4g.medium` (minimum)
+4. Check **"I acknowledge that AWS CloudFormation might create IAM resources"**
+5. Wait for `CREATE_COMPLETE` (~8 minutes)
+6. Repeat for each user
 
 ### Batch Deploy via CLI
 
 ```bash
-VPC_ID=vpc-xxx
-SUBNET_ID=subnet-xxx
-AZ=us-west-2a
+git clone https://github.com/ddpie/openclaw-on-aws.git
+cd openclaw-on-aws
 
+# Step 1: Shared VPC
+aws cloudformation create-stack \
+  --stack-name openclaw-shared-vpc \
+  --template-body file://vpc-shared.yaml
+
+# Wait for completion, then get outputs
+VPC_ID=$(aws cloudformation describe-stacks \
+  --stack-name openclaw-shared-vpc \
+  --query 'Stacks[0].Outputs[?OutputKey==`VpcId`].OutputValue' --output text)
+SUBNET_ID=$(aws cloudformation describe-stacks \
+  --stack-name openclaw-shared-vpc \
+  --query 'Stacks[0].Outputs[?OutputKey==`PublicSubnet1Id`].OutputValue' --output text)
+AZ=$(aws cloudformation describe-stacks \
+  --stack-name openclaw-shared-vpc \
+  --query 'Stacks[0].Outputs[?OutputKey==`PublicSubnet1AZ`].OutputValue' --output text)
+
+# Step 2: Per-user instances
 for USER in alice bob charlie; do
   aws cloudformation create-stack \
     --stack-name openclaw-$USER \
@@ -105,6 +141,21 @@ for USER in alice bob charlie; do
       ParameterKey=InstanceType,ParameterValue=t4g.medium \
     --capabilities CAPABILITY_IAM
 done
+```
+
+### Step 3 — Initialize Each Instance
+
+```bash
+# Get instance ID from stack outputs
+INSTANCE_ID=$(aws cloudformation describe-stacks \
+  --stack-name openclaw-alice \
+  --query 'Stacks[0].Outputs[?OutputKey==`InstanceId`].OutputValue' --output text)
+
+# Connect and initialize
+aws ssm start-session --target $INSTANCE_ID
+sudo su - ubuntu
+openclaw gateway status
+openclaw onboard
 ```
 
 ### Teardown
@@ -157,7 +208,7 @@ MIT
 
 # OpenClaw on AWS（中文）
 
-> 在 AWS 上部署 OpenClaw，使用 Amazon Bedrock。无需 API Key，IAM 认证，每人每月约 $13。
+> 在 AWS 上部署 OpenClaw，使用 Amazon Bedrock。无需 API Key，IAM 认证。
 
 ## 部署方案
 
@@ -171,20 +222,38 @@ MIT
 ## 前置条件
 
 1. 在 [Bedrock 控制台](https://console.aws.amazon.com/bedrock/) **开启模型访问**（推荐 Claude Opus 4.6）
-2. 在目标 Region **创建 EC2 密钥对**
+2. 在目标 Region **创建 EC2 密钥对**（可选，用于 SSH 访问）
 
 ## 方案一：独立部署（单人）
 
 一个 Stack = 一套完整的 OpenClaw（含独立 VPC）。适合个人使用或快速体验。
 
-### 一键部署
+### 控制台部署
 
-| Region | 部署 |
-|--------|------|
-| **美西（Oregon）** | [![Launch](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-west-2#/stacks/create/review?stackName=openclaw-bedrock&templateURL=https://raw.githubusercontent.com/ddpie/openclaw-on-aws/main/openclaw-standalone.yaml) |
-| **美东（Virginia）** | [![Launch](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/create/review?stackName=openclaw-bedrock&templateURL=https://raw.githubusercontent.com/ddpie/openclaw-on-aws/main/openclaw-standalone.yaml) |
-| **欧洲（Ireland）** | [![Launch](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=eu-west-1#/stacks/create/review?stackName=openclaw-bedrock&templateURL=https://raw.githubusercontent.com/ddpie/openclaw-on-aws/main/openclaw-standalone.yaml) |
-| **亚太（Tokyo）** | [![Launch](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=ap-northeast-1#/stacks/create/review?stackName=openclaw-bedrock&templateURL=https://raw.githubusercontent.com/ddpie/openclaw-on-aws/main/openclaw-standalone.yaml) |
+1. 打开对应 Region 的 CloudFormation 控制台：
+   - [美西 Oregon](https://console.aws.amazon.com/cloudformation/home?region=us-west-2#/stacks/create)
+   - [美东 Virginia](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/create)
+   - [欧洲 Ireland](https://console.aws.amazon.com/cloudformation/home?region=eu-west-1#/stacks/create)
+   - [亚太 Tokyo](https://console.aws.amazon.com/cloudformation/home?region=ap-northeast-1#/stacks/create)
+2. 选择 **Upload a template file**，上传 `openclaw-standalone.yaml`
+3. Stack 名称：`openclaw-bedrock`
+4. 配置参数（模型、实例类型等）
+5. 勾选 **"I acknowledge that AWS CloudFormation might create IAM resources"**
+6. 点击 **Create stack**，等待约 8 分钟至 `CREATE_COMPLETE`
+
+### CLI 部署
+
+```bash
+git clone https://github.com/ddpie/openclaw-on-aws.git
+cd openclaw-on-aws
+
+aws cloudformation create-stack \
+  --stack-name openclaw-bedrock \
+  --template-body file://openclaw-standalone.yaml \
+  --parameters \
+    ParameterKey=InstanceType,ParameterValue=t4g.medium \
+  --capabilities CAPABILITY_IAM
+```
 
 ### 部署后操作
 
@@ -214,33 +283,51 @@ openclaw onboard
 
 ### 第一步 — 部署共享网络（仅一次）
 
-| Region | 部署 |
-|--------|------|
-| **美西（Oregon）** | [![Launch](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-west-2#/stacks/create/review?stackName=openclaw-shared-vpc&templateURL=https://raw.githubusercontent.com/ddpie/openclaw-on-aws/main/vpc-shared.yaml) |
-| **美东（Virginia）** | [![Launch](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/create/review?stackName=openclaw-shared-vpc&templateURL=https://raw.githubusercontent.com/ddpie/openclaw-on-aws/main/vpc-shared.yaml) |
-| **欧洲（Ireland）** | [![Launch](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=eu-west-1#/stacks/create/review?stackName=openclaw-shared-vpc&templateURL=https://raw.githubusercontent.com/ddpie/openclaw-on-aws/main/vpc-shared.yaml) |
-| **亚太（Tokyo）** | [![Launch](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=ap-northeast-1#/stacks/create/review?stackName=openclaw-shared-vpc&templateURL=https://raw.githubusercontent.com/ddpie/openclaw-on-aws/main/vpc-shared.yaml) |
-
-记录 Outputs 中的 `VpcId`、`PublicSubnet1Id`、`PublicSubnet1AZ`。
+1. 打开对应 Region 的 CloudFormation 控制台：
+   - [美西 Oregon](https://console.aws.amazon.com/cloudformation/home?region=us-west-2#/stacks/create)
+   - [美东 Virginia](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/create)
+   - [欧洲 Ireland](https://console.aws.amazon.com/cloudformation/home?region=eu-west-1#/stacks/create)
+   - [亚太 Tokyo](https://console.aws.amazon.com/cloudformation/home?region=ap-northeast-1#/stacks/create)
+2. 上传 `vpc-shared.yaml`，Stack 名称：`openclaw-shared-vpc`
+3. 等待 `CREATE_COMPLETE`（约 2 分钟）
+4. 进入 **Outputs** 页签，记录：`VpcId`、`PublicSubnet1Id`、`PublicSubnet1AZ`
 
 ### 第二步 — 部署用户实例
 
-| Region | 部署 |
-|--------|------|
-| **美西（Oregon）** | [![Launch](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-west-2#/stacks/create/review?stackName=openclaw-user&templateURL=https://raw.githubusercontent.com/ddpie/openclaw-on-aws/main/openclaw-per-user.yaml) |
-| **美东（Virginia）** | [![Launch](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=us-east-1#/stacks/create/review?stackName=openclaw-user&templateURL=https://raw.githubusercontent.com/ddpie/openclaw-on-aws/main/openclaw-per-user.yaml) |
-| **欧洲（Ireland）** | [![Launch](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=eu-west-1#/stacks/create/review?stackName=openclaw-user&templateURL=https://raw.githubusercontent.com/ddpie/openclaw-on-aws/main/openclaw-per-user.yaml) |
-| **亚太（Tokyo）** | [![Launch](https://s3.amazonaws.com/cloudformation-examples/cloudformation-launch-stack.png)](https://console.aws.amazon.com/cloudformation/home?region=ap-northeast-1#/stacks/create/review?stackName=openclaw-user&templateURL=https://raw.githubusercontent.com/ddpie/openclaw-on-aws/main/openclaw-per-user.yaml) |
-
-填入共享 VPC Stack 输出的 `VpcId`、`SubnetId`、`AvailabilityZone`。
+1. 创建新 Stack，上传 `openclaw-per-user.yaml`
+2. Stack 名称：`openclaw-用户名`（如 `openclaw-alice`）
+3. 填写参数：
+   - `VpcId` — 第一步 Outputs 中的值
+   - `SubnetId` — 第一步 Outputs 中的 `PublicSubnet1Id`
+   - `AvailabilityZone` — 第一步 Outputs 中的 `PublicSubnet1AZ`
+   - `InstanceType` — `t4g.medium`（最低要求）
+4. 勾选 **"I acknowledge that AWS CloudFormation might create IAM resources"**
+5. 等待 `CREATE_COMPLETE`（约 8 分钟）
+6. 每个用户重复以上步骤
 
 ### 批量部署脚本
 
 ```bash
-VPC_ID=vpc-xxx
-SUBNET_ID=subnet-xxx
-AZ=us-west-2a
+git clone https://github.com/ddpie/openclaw-on-aws.git
+cd openclaw-on-aws
 
+# 第一步：共享网络
+aws cloudformation create-stack \
+  --stack-name openclaw-shared-vpc \
+  --template-body file://vpc-shared.yaml
+
+# 等待完成后获取输出
+VPC_ID=$(aws cloudformation describe-stacks \
+  --stack-name openclaw-shared-vpc \
+  --query 'Stacks[0].Outputs[?OutputKey==`VpcId`].OutputValue' --output text)
+SUBNET_ID=$(aws cloudformation describe-stacks \
+  --stack-name openclaw-shared-vpc \
+  --query 'Stacks[0].Outputs[?OutputKey==`PublicSubnet1Id`].OutputValue' --output text)
+AZ=$(aws cloudformation describe-stacks \
+  --stack-name openclaw-shared-vpc \
+  --query 'Stacks[0].Outputs[?OutputKey==`PublicSubnet1AZ`].OutputValue' --output text)
+
+# 第二步：批量创建用户实例
 for USER in alice bob charlie; do
   aws cloudformation create-stack \
     --stack-name openclaw-$USER \
@@ -252,6 +339,21 @@ for USER in alice bob charlie; do
       ParameterKey=InstanceType,ParameterValue=t4g.medium \
     --capabilities CAPABILITY_IAM
 done
+```
+
+### 第三步 — 初始化每个实例
+
+```bash
+# 获取实例 ID
+INSTANCE_ID=$(aws cloudformation describe-stacks \
+  --stack-name openclaw-alice \
+  --query 'Stacks[0].Outputs[?OutputKey==`InstanceId`].OutputValue' --output text)
+
+# 登录并初始化
+aws ssm start-session --target $INSTANCE_ID
+sudo su - ubuntu
+openclaw gateway status
+openclaw onboard
 ```
 
 ### 删除顺序
