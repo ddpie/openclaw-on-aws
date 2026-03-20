@@ -39,7 +39,7 @@ Parameters:
 
   OpenClawModel:
     Type: String
-    Default: "global.amazon.nova-2-lite-v1:0"
+    Default: "global.anthropic.claude-opus-4-6-v1"
     Description: "Bedrock model ID - Nova 2 Lite offers best price-performance for everyday tasks"
     AllowedValues:
       - "global.amazon.nova-2-lite-v1:0"
